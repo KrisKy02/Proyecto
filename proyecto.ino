@@ -42,6 +42,21 @@ void setup() {
   timer.setInterval(100L, soilMoistureSensor);
 }
 
+//Get the button value
+BLYNK_WRITE(V1) {
+  Relay = param.asInt();
+
+  if (Relay == 1) {
+    digitalWrite(waterPump, LOW);
+    lcd.setCursor(0, 1);
+    Serial.print("Motor is ON ");
+  } else {
+    digitalWrite(waterPump, HIGH);
+    lcd.setCursor(0, 1);
+    Serial.print("Motor is OFF");
+  }
+}
+
 //Get the soil moisture values
 void soilMoistureSensor() {
   int value = analogRead(sensor);
