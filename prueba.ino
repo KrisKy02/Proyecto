@@ -1,81 +1,62 @@
 /* Fill-in information from Blynk Device Info here */
 #define BLYNK_TEMPLATE_ID "TMPL2UZ52pyss"
 #define BLYNK_TEMPLATE_NAME "Sistema de Riego Automatizado"
-#define BLYNK_AUTH_TOKEN            "3sV357aX53GrXMmg4Neh_oUquzLnVoBB"
-
-/* Comment this out to disable prints and save space */
+#include <LiquidCrystal_I2C.h>
 #define BLYNK_PRINT Serial
-#define sensor A0
-
-
-
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 
-// Your WiFi credentials.
-// Set password to "" for open networks.
-char ssid[] = "Colibri2";
-char pass[] = "cLaEXg54!460";
+//Initialize the LCD display
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-WiFiClient client;
-
+char auth[] = "3sV357aX53GrXMmg4Neh_oUquzLnVoBB";
+char ssid[] = "Kristel";
+char pass[] = "Piti1006";
 
 BlynkTimer timer;
+bool Relay = 0;
 
-// This function is called every time the Virtual Pin 0 state changes
-BLYNK_WRITE(V0)
-{
-  // Set incoming value from pin V0 to a variable
-  int value = param.asInt();
+//Define component pins
+#define sensor A0
+#define waterPump D3
 
-  // Update state
-  Blynk.virtualWrite(V1, value);
+void setup() {
+  Serial.begin(9600);
+  pinMode(waterPump, OUTPUT);
+  digitalWrite(waterPump, HIGH);
+  lcd.init();
+  lcd.backlight();
+
+  Blynk.begin(auth, ssid, pass, "blynk.cloud", 80);
+
+  lcd.setCursor(1, 0);
+  Serial.print("System Loading");
+  for (int a = 0; a <= 15; a++) {
+    lcd.setCursor(a, 1);
+    Serial.print(".");
+    delay(500);
+  }
+  lcd.clear();
+
+  //Call the function
+  timer.setInterval(100L, soilMoistureSensor);
 }
 
-// This function is called every time the device is connected to the Blynk.Cloud
-BLYNK_CONNECTED()
-{
-  // Change Web Link Button message to "Congratulations!"
-  Blynk.setProperty(V3, "offImageUrl", "https://static-image.nyc3.cdn.digitaloceanspaces.com/general/fte/congratulations.png");
-  Blynk.setProperty(V3, "onImageUrl",  "https://static-image.nyc3.cdn.digitaloceanspaces.com/general/fte/congratulations_pressed.png");
-  Blynk.setProperty(V3, "url", "https://docs.blynk.io/en/getting-started/what-do-i-need-to-blynk/how-quickstart-device-was-made");
-}
+//Get the soil moisture values
+void soilMoistureSensor() {
+  int value = analogRead(sensor);
+  value = map(value, 0, 1024, 0, 100);
+  value = (value - 100) * -1;
 
-// This function sends Arduino's uptime every second to Virtual Pin 2.
-void myTimerEvent()
-{
-  // You can send any value at any time.
-  // Please don't send more that 10 values per second.
-  Blynk.virtualWrite(V2, millis() / 1000);
-}
-
-void setup()
-{
-  // Debug console
-  Serial.begin(9600); // Inicia la comunicación serial a 9600 baudios
-
-  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
-
-
-  // Setup a function to be called every second
-  timer.setInterval(1000L, myTimerEvent);
-
-  //connectToWiFi();
+  Blynk.virtualWrite(V0, value);
+  lcd.setCursor(0, 0);
+  //Serial.print("Moisture :");
+  //Serial.print(value);
+  //Serial.print(" ");
 
 }
 
-void loop()
-{
-  Blynk.run();
-  timer.run();
-  int value = analogRead(sensor); // Lee el valor del sensor
-  value = map(value, 0, 1024, 0, 100); // Mapea el valor a un rango de 0 a 100
-  value = (value - 100) * -1; // Invierte el valor
-
-  Serial.print("Humedad del suelo: "); // Imprime un mensaje en el monitor serial
-  Serial.print(value); // Imprime el valor
-  Serial.println("%"); // Imprime un símbolo de porcentaje y un salto de línea
-
-  delay(1000); // Espera un segundo antes de la siguiente lectura
-
+void loop() {
+  Blynk.run();//Run the Blynk library
+  timer.run();//Run the Blynk timer
 }
